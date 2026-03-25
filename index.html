@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Feedback Registration Form</title>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Internal CSS -->
+  <style>
+    /* Internal CSS - form specific overrides */
+    .form-title {
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 8px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .form-subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #7f8c8d;
+      margin-bottom: 25px;
+    }
+
+    .form-group label span {
+      color: red;
+      margin-left: 2px;
+    }
+
+    .error-msg {
+      color: #e74c3c;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .success-box {
+      display: none;
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      border-radius: 6px;
+      padding: 15px;
+      text-align: center;
+      font-size: 15px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="form-header">
+      <img src="https://cdn-icons-png.flaticon.com/512/3135/3135810.png" alt="Student Icon" class="header-icon" />
+      <h2 class="form-title">Student Feedback Registration Form</h2>
+      <p class="form-subtitle">Please fill out all required fields below</p>
+    </div>
+
+    <form id="feedbackForm" novalidate>
+
+      <!-- Student Name -->
+      <div class="form-group">
+        <label for="studentName">Student Name <span>*</span></label>
+        <input type="text" id="studentName" name="studentName" placeholder="Enter your full name" />
+        <div class="error-msg" id="nameError">Student name cannot be empty.</div>
+      </div>
+
+      <!-- Email ID -->
+      <div class="form-group">
+        <label for="emailId">Email ID <span>*</span></label>
+        <input type="email" id="emailId" name="emailId" placeholder="example@email.com" />
+        <div class="error-msg" id="emailError">Please enter a valid email address.</div>
+      </div>
+
+      <!-- Mobile Number -->
+      <div class="form-group">
+        <label for="mobileNum">Mobile Number <span>*</span></label>
+        <input type="text" id="mobileNum" name="mobileNum" placeholder="10-digit mobile number" maxlength="10" />
+        <div class="error-msg" id="mobileError">Mobile number must contain 10 valid digits.</div>
+      </div>
+
+      <!-- Department -->
+      <div class="form-group">
+        <label for="department">Department <span>*</span></label>
+        <select id="department" name="department">
+          <option value="">-- Select Department --</option>
+          <option value="CSE">Computer Science Engineering (CSE)</option>
+          <option value="IT">Information Technology (IT)</option>
+          <option value="ECE">Electronics & Communication (ECE)</option>
+          <option value="ME">Mechanical Engineering (ME)</option>
+          <option value="CE">Civil Engineering (CE)</option>
+          <option value="EE">Electrical Engineering (EE)</option>
+        </select>
+        <div class="error-msg" id="deptError">Please select your department.</div>
+      </div>
+
+      <!-- Gender -->
+      <div class="form-group">
+        <label>Gender <span>*</span></label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="gender" value="Male" /> Male
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="gender" value="Female" /> Female
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="gender" value="Other" /> Other
+          </label>
+        </div>
+        <div class="error-msg" id="genderError">Please select a gender option.</div>
+      </div>
+
+      <!-- Feedback Comments -->
+      <div class="form-group">
+        <label for="feedback">Feedback Comments <span>*</span></label>
+        <textarea id="feedback" name="feedback" rows="5" placeholder="Write your feedback here (minimum 10 words)..."></textarea>
+        <div class="error-msg" id="feedbackError">Feedback must not be blank and should contain at least 10 words.</div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-group">
+        <button type="submit" id="submitBtn" onclick="return validateForm()">Submit</button>
+        <button type="reset" id="resetBtn" onclick="resetForm()">Reset</button>
+      </div>
+
+      <!-- Success Message -->
+      <div class="success-box" id="successMsg">
+        ✅ Thank you! Your feedback has been submitted successfully.
+      </div>
+
+    </form>
+  </div>
+
+  <!-- JavaScript Validation -->
+  <script src="script.js"></script>
+
+</body>
+</html>
