@@ -1,153 +1,164 @@
 // test_feedback_form.js
 // Selenium Test Cases for Student Feedback Registration Form
-// Using Node.js + selenium-webdriver + mocha
+// Run with: node test_feedback_form.js
 
-const { Builder, By, until, Select } = require("selenium-webdriver");
+const { Builder, By, Select } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
-const assert = require("assert");
 const path = require("path");
 
 // -------------------------------------------------------
-// IMPORTANT: Update this path to your index.html location
+// Auto-setup ChromeDriver using npm chromedriver package
+// -------------------------------------------------------
+const chromedriver = require("chromedriver");
+
+// Path to chromedriver binary installed via npm
+const chromedriverPath = chromedriver.path;
+
+// -------------------------------------------------------
+// IMPORTANT: Update this path to point to your index.html
 // -------------------------------------------------------
 const FORM_URL =
   "file:///" + path.resolve(__dirname, "index.html").replace(/\\/g, "/");
 
-let driver;
-
-// Helper: sleep for ms milliseconds
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Helper: clear and fill an input field
-async function fillField(id, value) {
+async function fillField(driver, id, value) {
   const el = await driver.findElement(By.id(id));
   await el.clear();
   await el.sendKeys(value);
 }
 
 // ============================================================
-// SETUP & TEARDOWN
+// TEST RUNNER
 // ============================================================
+async function runTests() {
+  let passed = 0;
+  let failed = 0;
 
-before(async function () {
-  this.timeout(30000);
-
+  // Chrome Options
   const options = new chrome.Options();
   options.addArguments("--no-sandbox");
   options.addArguments("--disable-dev-shm-usage");
-  // Uncomment below for headless mode (required for Jenkins)
-  options.addArguments("--headless=new");
+  options.addArguments("--headless=new"); // Remove this line to see the browser window
 
-  driver = await new Builder()
+  // FIX: use chrome.ServiceBuilder (not imported ServiceBuilder)
+  const service = new chrome.ServiceBuilder(chromedriverPath);
+
+  const driver = await new Builder()
     .forBrowser("chrome")
     .setChromeOptions(options)
+    .setChromeService(service)
     .build();
-});
 
-after(async function () {
-  await driver.quit();
-  console.log("\nAll test cases executed. Browser closed.");
-});
+  async function openForm() {
+    await driver.get(FORM_URL);
+    await sleep(800);
+  }
 
-// Open form before each test
-beforeEach(async function () {
-  await driver.get(FORM_URL);
-  await sleep(800);
-});
+  async function runTest(name, fn) {
+    try {
+      await openForm();
+      await fn(driver);
+      console.log(`  PASSED: ${name}`);
+      passed++;
+    } catch (err) {
+      console.log(`  FAILED: ${name}`);
+      console.log(`     Reason: ${err.message}`);
+      failed++;
+    }
+  }
 
-// ============================================================
-// TEST CASES
-// ============================================================
-
-describe("Student Feedback Form - Selenium Tests", function () {
-  this.timeout(20000);
+  console.log("\n========================================");
+  console.log("  Student Feedback Form - Selenium Tests");
+  console.log("========================================\n");
 
   // ----------------------------------------------------------
-  // TC1: Check whether the form page opens successfully
+  // TC1: Form page opens successfully
   // ----------------------------------------------------------
-  it("TC1: Form page opens successfully", async function () {
+  await runTest("TC1: Form page opens successfully", async (driver) => {
     const title = await driver.getTitle();
-    assert.ok(title.includes("Feedback"), "Page title does not contain 'Feedback'");
+    if (!title.includes("Feedback"))
+      throw new Error("Page title missing 'Feedback'");
 
     const heading = await driver.findElement(By.className("form-title"));
-    const headingText = await heading.getText();
-    assert.ok(headingText.includes("Feedback"), "Heading does not contain 'Feedback'");
-
-    console.log("TC1 PASSED: Form page opened successfully.");
+    const text = await heading.getText();
+    if (!text.includes("Feedback"))
+      throw new Error("Heading missing 'Feedback'");
   });
 
   // ----------------------------------------------------------
-  // TC2: Enter valid data and verify successful submission
+  // TC2: Valid data submits successfully
   // ----------------------------------------------------------
-  it("TC2: Valid data submits successfully", async function () {
-    await fillField("studentName", "Rahul Sharma");
-    await fillField("emailId", "rahul.sharma@example.com");
-    await fillField("mobileNum", "9876543210");
+  await runTest("TC2: Valid data submits successfully", async (driver) => {
+    await fillField(driver, "studentName", "Rahul Sharma");
+    await fillField(driver, "emailId", "rahul.sharma@example.com");
+    await fillField(driver, "mobileNum", "9876543210");
 
-    // Select department
     const deptEl = await driver.findElement(By.id("department"));
-    const deptSelect = new Select(deptEl);
-    await deptSelect.selectByValue("CSE");
+    await new Select(deptEl).selectByValue("CSE");
 
-    // Select gender
-    const maleRadio = await driver.findElement(
-      By.xpath("//input[@name='gender'][@value='Male']")
-    );
-    await maleRadio.click();
+    await driver
+      .findElement(By.xpath("//input[@name='gender'][@value='Male']"))
+      .click();
 
-    // Fill feedback
     await fillField(
+      driver,
       "feedback",
       "The teaching quality has been excellent and the faculty is very supportive and helpful."
     );
 
-    // Submit
     await driver.findElement(By.id("submitBtn")).click();
     await sleep(1000);
 
     const successBox = await driver.findElement(By.id("successMsg"));
-    const isVisible = await successBox.isDisplayed();
-    assert.strictEqual(isVisible, true, "Success message not shown for valid data.");
-
-    console.log("TC2 PASSED: Valid data submitted successfully.");
+    if (!(await successBox.isDisplayed()))
+      throw new Error("Success message not shown for valid data.");
   });
 
   // ----------------------------------------------------------
-  // TC3: Leave mandatory fields blank and check error messages
+  // TC3: Blank mandatory fields show error messages
   // ----------------------------------------------------------
-  it("TC3: Blank mandatory fields show error messages", async function () {
-    await driver.findElement(By.id("submitBtn")).click();
-    await sleep(800);
+  await runTest(
+    "TC3: Blank mandatory fields show error messages",
+    async (driver) => {
+      await driver.findElement(By.id("submitBtn")).click();
+      await sleep(800);
 
-    const errors = ["nameError", "emailError", "deptError", "genderError", "feedbackError"];
-
-    for (const errId of errors) {
-      const errEl = await driver.findElement(By.id(errId));
-      const visible = await errEl.isDisplayed();
-      assert.ok(visible, `Error "${errId}" was not displayed.`);
+      const errorIds = [
+        "nameError",
+        "emailError",
+        "deptError",
+        "genderError",
+        "feedbackError",
+      ];
+      for (const id of errorIds) {
+        const el = await driver.findElement(By.id(id));
+        if (!(await el.isDisplayed()))
+          throw new Error(`Error "${id}" not displayed`);
+      }
     }
-
-    console.log("TC3 PASSED: Error messages shown for blank mandatory fields.");
-  });
+  );
 
   // ----------------------------------------------------------
-  // TC4: Enter invalid email format and verify validation
+  // TC4: Invalid email format is detected
   // ----------------------------------------------------------
-  it("TC4: Invalid email format is detected", async function () {
-    await fillField("studentName", "Test User");
-    await fillField("emailId", "invalidemail@");
-    await fillField("mobileNum", "9876543210");
+  await runTest("TC4: Invalid email format is detected", async (driver) => {
+    await fillField(driver, "studentName", "Test User");
+    await fillField(driver, "emailId", "invalidemail@");
+    await fillField(driver, "mobileNum", "9876543210");
 
-    const deptEl = await driver.findElement(By.id("department"));
-    await new Select(deptEl).selectByValue("IT");
+    await new Select(
+      await driver.findElement(By.id("department"))
+    ).selectByValue("IT");
 
-    await driver.findElement(
-      By.xpath("//input[@name='gender'][@value='Female']")
-    ).click();
+    await driver
+      .findElement(By.xpath("//input[@name='gender'][@value='Female']"))
+      .click();
 
     await fillField(
+      driver,
       "feedback",
       "This is a feedback with more than ten words to satisfy the minimum requirement here."
     );
@@ -155,28 +166,29 @@ describe("Student Feedback Form - Selenium Tests", function () {
     await driver.findElement(By.id("submitBtn")).click();
     await sleep(800);
 
-    const emailError = await driver.findElement(By.id("emailError"));
-    assert.ok(await emailError.isDisplayed(), "Email error not shown for invalid format.");
-
-    console.log("TC4 PASSED: Invalid email format detected correctly.");
+    const el = await driver.findElement(By.id("emailError"));
+    if (!(await el.isDisplayed()))
+      throw new Error("Email error not shown for invalid format.");
   });
 
   // ----------------------------------------------------------
-  // TC5: Enter invalid mobile number and verify validation
+  // TC5: Invalid mobile number is detected
   // ----------------------------------------------------------
-  it("TC5: Invalid mobile number is detected", async function () {
-    await fillField("studentName", "Test User");
-    await fillField("emailId", "test@valid.com");
-    await fillField("mobileNum", "12345abc"); // Invalid
+  await runTest("TC5: Invalid mobile number is detected", async (driver) => {
+    await fillField(driver, "studentName", "Test User");
+    await fillField(driver, "emailId", "test@valid.com");
+    await fillField(driver, "mobileNum", "12345abc");
 
-    const deptEl = await driver.findElement(By.id("department"));
-    await new Select(deptEl).selectByValue("ME");
+    await new Select(
+      await driver.findElement(By.id("department"))
+    ).selectByValue("ME");
 
-    await driver.findElement(
-      By.xpath("//input[@name='gender'][@value='Male']")
-    ).click();
+    await driver
+      .findElement(By.xpath("//input[@name='gender'][@value='Male']"))
+      .click();
 
     await fillField(
+      driver,
       "feedback",
       "Feedback with enough words to pass the minimum word count validation check easily."
     );
@@ -184,34 +196,31 @@ describe("Student Feedback Form - Selenium Tests", function () {
     await driver.findElement(By.id("submitBtn")).click();
     await sleep(800);
 
-    const mobileError = await driver.findElement(By.id("mobileError"));
-    assert.ok(await mobileError.isDisplayed(), "Mobile error not shown for invalid number.");
-
-    console.log("TC5 PASSED: Invalid mobile number detected correctly.");
+    const el = await driver.findElement(By.id("mobileError"));
+    if (!(await el.isDisplayed()))
+      throw new Error("Mobile error not shown for invalid number.");
   });
 
   // ----------------------------------------------------------
-  // TC6: Check whether dropdown selection works properly
+  // TC6: Dropdown selection works correctly
   // ----------------------------------------------------------
-  it("TC6: Dropdown selection works correctly", async function () {
+  await runTest("TC6: Dropdown selection works correctly", async (driver) => {
     const deptEl = await driver.findElement(By.id("department"));
     const deptSelect = new Select(deptEl);
     await deptSelect.selectByValue("ECE");
     await sleep(500);
 
-    const selectedOption = await deptSelect.getFirstSelectedOption();
-    const selectedValue = await selectedOption.getAttribute("value");
-    assert.strictEqual(selectedValue, "ECE", "Dropdown did not select ECE.");
-
-    console.log("TC6 PASSED: Dropdown selection works correctly.");
+    const selected = await deptSelect.getFirstSelectedOption();
+    const val = await selected.getAttribute("value");
+    if (val !== "ECE") throw new Error(`Expected ECE but got ${val}`);
   });
 
   // ----------------------------------------------------------
-  // TC7: Check whether Submit and Reset buttons work correctly
+  // TC7: Reset button clears all fields
   // ----------------------------------------------------------
-  it("TC7: Reset button clears all fields", async function () {
-    await fillField("studentName", "Anjali Verma");
-    await fillField("emailId", "anjali@test.com");
+  await runTest("TC7: Reset button clears all fields", async (driver) => {
+    await fillField(driver, "studentName", "Anjali Verma");
+    await fillField(driver, "emailId", "anjali@test.com");
 
     await driver.findElement(By.id("resetBtn")).click();
     await sleep(500);
@@ -223,9 +232,23 @@ describe("Student Feedback Form - Selenium Tests", function () {
       .findElement(By.id("emailId"))
       .getAttribute("value");
 
-    assert.strictEqual(nameVal, "", "Name field not cleared after reset.");
-    assert.strictEqual(emailVal, "", "Email field not cleared after reset.");
-
-    console.log("TC7 PASSED: Reset button works correctly.");
+    if (nameVal !== "") throw new Error("Name field not cleared after reset.");
+    if (emailVal !== "") throw new Error("Email field not cleared after reset.");
   });
+
+  // ----------------------------------------------------------
+  // SUMMARY
+  // ----------------------------------------------------------
+  await driver.quit();
+
+  console.log("\n========================================");
+  console.log(`  RESULTS: ${passed} passed, ${failed} failed`);
+  console.log("========================================\n");
+
+  if (failed > 0) process.exit(1);
+}
+
+runTests().catch((err) => {
+  console.error("Unexpected error:", err);
+  process.exit(1);
 });
