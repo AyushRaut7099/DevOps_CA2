@@ -18,16 +18,16 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                echo 'Step 2: Installing Python dependencies...'
-                bat 'python -m pip install selenium'
-                bat 'python -m pip install webdriver-manager'
+                echo 'Step 2: Installing Python3 dependencies...'
+                bat 'python3 -m pip install selenium'
+                bat 'python3 -m pip install webdriver-manager'
             }
         }
 
         stage('Run Selenium Tests') {
             steps {
                 echo 'Step 3: Running Selenium test cases...'
-                bat 'python test_feedback_form.py'
+                bat 'python3 test_feedback_form.py'
             }
         }
 
