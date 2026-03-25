@@ -1,6 +1,3 @@
-// Jenkinsfile
-// Jenkins Pipeline to automate Selenium test execution for Student Feedback Form
-
 pipeline {
 
     agent any
@@ -10,24 +7,21 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Step 1: Checking out project files...'
-                // If using GitHub, uncomment and update:
-                // git branch: 'main', url: 'https://github.com/your-username/student-feedback-form.git'
                 echo 'Project files loaded successfully.'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo 'Step 2: Installing Python3 dependencies...'
-                bat 'python3 -m pip install selenium'
-                bat 'python3 -m pip install webdriver-manager'
+                echo 'Step 2: Installing Node.js dependencies...'
+                bat 'npm install'
             }
         }
 
         stage('Run Selenium Tests') {
             steps {
-                echo 'Step 3: Running Selenium test cases...'
-                bat 'python3 test_feedback_form.py'
+                echo 'Step 3: Running Selenium test cases with Mocha...'
+                bat 'npm test'
             }
         }
 
